@@ -5,6 +5,9 @@
 # External libraries
 from pydantic import BaseModel, EmailStr
 
+# Other data models
+from src.data_models.mfa_models import BaseMFA, TOTPToken
+
 
 # Simple models (based on BaseModel)
 # ==================================
@@ -12,8 +15,8 @@ from pydantic import BaseModel, EmailStr
 class BaseUser(BaseModel):
     """ The most basic user model """
 
-    uuid: str | None = None
-    email: EmailStr | None = None
+    user_uuid: str | None = None
+    user_email: EmailStr | None = None
 
 
 # Composed models
@@ -22,10 +25,18 @@ class BaseUser(BaseModel):
 class UserWithPassword(BaseUser):
     """ User model with plain text password """
 
-    password: str | None = None
+    user_password: str | None = None
 
 
 class UserWithHashedPassword(BaseUser):
     """ User model with hashed password """
 
-    hashed_password: str | None = None
+    user_hashed_password: str | None = None
+
+
+class UserWithMFAData(BaseUser, BaseMFA):
+    """ User model enriched with MFA data """
+
+
+class UserWithTOTPTokenData(BaseUser, TOTPToken):
+    """ User model enriched with TOTP Token data """

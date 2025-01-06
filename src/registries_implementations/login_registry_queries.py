@@ -70,13 +70,33 @@ RETURNING
 
 GET_USER_FROM_CREDENTIALS_QUERY: str = """
 SELECT
-    users.uuid
+    users.uuid AS "user_uuid",
+
+    mfa_keys.uuid AS "mfa_uuid",
+    mfa_keys.mfa_key AS "mfa_key"
 FROM
     users
 INNER JOIN
     users_passwords ON users_passwords.uuid = users.user_password
+LEFT JOIN
+    mfa_keys ON mfa_keys.user_uuid = users.uuid
 WHERE
     users.email = %(email)s
 AND
     users_passwords.hashed_password = %(hashed_password)s
+"""
+
+GET_USER_FROM_UUID_WITH_MFA_DATA_QUERY: str = """
+SELECT
+    users.uuid AS "user_uuid",
+    users.email AS "user_email",
+
+    mfa_keys.uuid AS "mfa_uuid",
+    mfa_keys.mfa_key AS "mfa_key"
+FROM
+    users
+LEFT JOIN
+    mfa_keys ON mfa_keys.user_uuid = users.uuid
+WHERE
+    users.uuid = %(user_uuid)s
 """

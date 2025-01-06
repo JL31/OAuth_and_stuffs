@@ -39,7 +39,7 @@ def encode_session_token(provided_data: dict, expires_delta: timedelta | None = 
     return encode(payload=payload_to_encode, key=secret_key, algorithm=algorithm)
 
 
-def decode_session_token(session_token: str) -> str | None:
+def decode_session_token(session_token: str) -> dict | None:
     """ Function to decode a session token from a JWT """
 
     jwt_secrets: dict = get_secret("JWT")
@@ -54,4 +54,4 @@ def decode_session_token(session_token: str) -> str | None:
 
     decoded_payload: dict = decode(jwt=session_token, key=secret_key, algorithms=[algorithm])
 
-    return decoded_payload.get("sub")
+    return decoded_payload

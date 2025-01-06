@@ -6,8 +6,16 @@
 from abc import ABC, abstractmethod
 
 # Data models
-from src.data_models.oauth_models import OAuthProvider, GetAuthorizationUrlData, RecordState, State, AccessTokenData, GetProviderAccessTokenData, RecordTokenData
-from src.data_models.user_models import BaseUser, UserWithPassword
+from src.data_models.oauth_models import (
+    OAuthProvider,
+    GetAuthorizationUrlData,
+    RecordState,
+    State,
+    AccessTokenData,
+    GetProviderAccessTokenData,
+    RecordTokenData
+)
+from src.data_models.user_models import BaseUser, UserWithPassword, UserWithMFAData
 from src.data_models.login_models import LoginWithPassword
 
 
@@ -43,5 +51,9 @@ class LoginRegistry(ABC):
         """ Method to add a user into database """
 
     @abstractmethod
-    def get_user_from_credentials(self, request: LoginWithPassword) -> BaseUser | None:
+    def get_user_from_credentials(self, request: LoginWithPassword) -> UserWithMFAData | None:
         """ Method to fetch a user from database from its credentials """
+
+    @abstractmethod
+    def get_user_from_uuid_with_mfa_data(self, request: BaseUser) -> UserWithMFAData | None:
+        """ Method to fetch a user from database from its uuid along with MFA data if available """

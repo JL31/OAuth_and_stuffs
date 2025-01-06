@@ -10,7 +10,7 @@ from src.registries.login_registry import LoginRegistry
 
 # Data models
 from src.data_models.login_models import LoginWithPassword
-from src.data_models.user_models import BaseUser
+from src.data_models.user_models import UserWithMFAData
 
 # Exceptions
 from src.exceptions.invalid_credentials_exception import InvalidCredentialsException
@@ -24,10 +24,10 @@ class LoginUsecase(AbstractUsecase):
 
         self.login_registry: LoginRegistry = login_registry
 
-    def execute(self, usecase_request: LoginWithPassword) -> BaseUser:
+    def execute(self, usecase_request: LoginWithPassword) -> UserWithMFAData:
         """ Method to perform login """
 
-        fetched_user: BaseUser | None = self.login_registry.get_user_from_credentials(usecase_request)
+        fetched_user: UserWithMFAData | None = self.login_registry.get_user_from_credentials(usecase_request)
         if not fetched_user:
             raise InvalidCredentialsException(f"Invalid credentials")
 

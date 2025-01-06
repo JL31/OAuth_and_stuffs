@@ -31,6 +31,7 @@ MarkupSafe==3.0.2
 mdurl==0.1.2
 oauthlib==3.2.2
 packaging==24.2
+pillow==11.1.0
 plux==1.12.1
 psutil==6.1.0
 psycopg2==2.9.10
@@ -49,6 +50,7 @@ python-dotenv==1.0.1
 python-jose==3.3.0
 python-multipart==0.0.18
 PyYAML==6.0.2
+qrcode==8.0
 redis==5.2.0
 requests==2.32.3
 requests-oauthlib==2.0.0

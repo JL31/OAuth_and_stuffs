@@ -18,8 +18,10 @@ from src.registries_implementations.login_registry_queries import (
     GET_USER_FROM_UUID_QUERY,
     INSERT_PASSWORD_DATA_QUERY,
     INSERT_USER_DATA_QUERY,
-    GET_USER_FROM_CREDENTIALS_QUERY
+    GET_USER_FROM_CREDENTIALS_QUERY,
+    GET_USER_FROM_UUID_WITH_MFA_DATA_QUERY
 )
+from src.data_models.user_models import UserWithMFAData
 
 # Tools
 from src.tools.aws_interfaces.secrets_manager_interface import get_specific_secret
@@ -353,7 +355,7 @@ class LoginRegistryImplementation(LoginRegistry):
                 database_cursor.execute(
                     query=GET_USER_FROM_UUID_QUERY,
                     vars={
-                        "user_uuid": request.uuid,
+                        "user_uuid": request.user_uuid,
                     }
                 )
                 result: RealDictRow = database_cursor.fetchone()
@@ -372,12 +374,12 @@ class LoginRegistryImplementation(LoginRegistry):
                 self.logger.exception(error)
                 raise ValueError(f"Unexpected error when interacting with PostgreSQL database : {error}")
 
-            return BaseUser(uuid=result.get("uuid")) if result else None
+            return BaseUser(user_uuid=result.get("uuid")) if result else None
 
     def add_user(self, request: UserWithPassword) -> BaseUser:
         """ Method to add a user into database """
 
-        hashed_password: str = hash_password(request.password)
+        hashed_password: str = hash_password(request.user_password)
 
         insertion_datetime: datetime = datetime.now(timezone.utc)
 
@@ -402,8 +404,8 @@ class LoginRegistryImplementation(LoginRegistry):
                     vars={
                         "created_at": insertion_datetime,
                         "updated_at": insertion_datetime,
-                        "email": request.email,
-                        "user_password_uuid": user_password_uuid,
+                        "email": request.user_email,
+                        "user_password_uuid": user_password_uuid
                     }
                 )
                 user_data_result: RealDictRow = database_cursor.fetchone()
@@ -423,11 +425,11 @@ class LoginRegistryImplementation(LoginRegistry):
                 raise ValueError(f"Unexpected error when interacting with PostgreSQL database : {error}")
 
         return BaseUser(
-            uuid=user_data_result.get("uuid"),
-            email=user_data_result.get("email")
+            user_uuid=user_data_result.get("uuid"),
+            user_email=user_data_result.get("email")
         ) if user_data_result else None
 
-    def get_user_from_credentials(self, request: LoginWithPassword) -> BaseUser | None:
+    def get_user_from_credentials(self, request: LoginWithPassword) -> UserWithMFAData | None:
         """ Method to fetch a user from database from its credentials """
 
         hashed_password: str = hash_password(request.password)
@@ -437,7 +439,7 @@ class LoginRegistryImplementation(LoginRegistry):
                 database_cursor.execute(
                     query=GET_USER_FROM_CREDENTIALS_QUERY,
                     vars={
-                        "email": request.email,
+                        "email": request.login_email,
                         "hashed_password": hashed_password
                     }
                 )
@@ -457,4 +459,41 @@ class LoginRegistryImplementation(LoginRegistry):
                 self.logger.exception(error)
                 raise ValueError(f"Unexpected error when interacting with PostgreSQL database : {error}")
 
-            return BaseUser(uuid=result.get("uuid")) if result else None
+            return UserWithMFAData(
+                mfa_uuid=result.get("mfa_uuid"),
+                user_uuid=result.get("user_uuid")
+            )  if result else None
+
+    def get_user_from_uuid_with_mfa_data(self, request: BaseUser) -> UserWithMFAData | None:
+        """ Method to fetch a user from database from its uuid along with MFA data if available """
+
+        with self.database_connector.cursor() as database_cursor:
+            try:
+                database_cursor.execute(
+                    query=GET_USER_FROM_UUID_WITH_MFA_DATA_QUERY,
+                    vars={
+                        "user_uuid": request.user_uuid,
+                    }
+                )
+                result: RealDictRow = database_cursor.fetchone()
+
+                self.database_connector.commit()
+
+            except Error as error:
+                self.database_connector.rollback()
+                self.logger.error(f"GET_USER_FROM_UUID_WITH_MFA_DATA - psycopg2 error : {error.pgcode} - {error.pgerror}")
+                self.logger.exception(error)
+                raise ValueError(f"Unexpected psycopg2 error : {error}")
+
+            except Exception as error:
+                self.database_connector.rollback()
+                self.logger.error(f"GET_USER_FROM_UUID_WITH_MFA_DATA - error : {error}")
+                self.logger.exception(error)
+                raise ValueError(f"Unexpected error when interacting with PostgreSQL database : {error}")
+
+            return UserWithMFAData(
+                mfa_key=result.get("mfa_key"),
+                mfa_uuid=result.get("mfa_uuid"),
+                user_uuid=result.get("user_uuid"),
+                user_email=result.get("user_email")
+            ) if result else None

@@ -28,17 +28,17 @@ class SubscriptionUsecase(AbstractUsecase):
         """ Performs a user subscription """
 
         added_user: BaseUser | None = self.login_registry.add_user(
-            UserWithPassword(email=usecase_request.email, password=usecase_request.password)
+            UserWithPassword(user_email=usecase_request.login_email, user_password=usecase_request.password)
         )
         if not added_user:
             raise RegistryException(f"Issue when trying to add user data with email : '{usecase_request.email}'")
 
-        if added_user.email != usecase_request.email:
+        if added_user.user_email != usecase_request.login_email:
             error_message: str  = "\n".join(
                 [
                     "Provided email (from request) does not match email recorded into database : ",
-                    f"- provided email (from request) : {usecase_request.email}",
-                    f"- recorded email : {added_user.email}"
+                    f"- provided email (from request) : {usecase_request.login_email}",
+                    f"- recorded email : {added_user.user_email}"
                 ]
             )
             raise RegistryException(error_message)

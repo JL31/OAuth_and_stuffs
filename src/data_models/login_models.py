@@ -15,7 +15,7 @@ from src.data_models.oauth_models import State
 class Login(BaseModel):
     """ The most basic login model """
 
-    email: EmailStr | None = None
+    login_email: EmailStr | None = None
 
 
 class URL(BaseModel):

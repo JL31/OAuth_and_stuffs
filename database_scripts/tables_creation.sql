@@ -38,3 +38,11 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL UNIQUE,
     user_password UUID REFERENCES users_passwords (uuid)
 );
+
+CREATE TABLE IF NOT EXISTS mfa_keys (
+    uuid UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    mfa_key VARCHAR(16) NOT NULL,
+    user_uuid UUID REFERENCES users (uuid)
+);
