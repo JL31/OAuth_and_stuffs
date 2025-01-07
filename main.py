@@ -7,9 +7,10 @@ from os import path, environ, getenv
 
 # External libraries
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn import run
+from slowapi.errors import RateLimitExceeded
 
 # Loading environment variables
 local_environment_variables_path: str = path.join(
@@ -26,6 +27,15 @@ from src.endpoints.rest_api_endpoints import router
 # FastAPI application
 application = FastAPI()
 application.include_router(router=router, prefix=getenv("API_PREFIX", ""))
+
+# Exception to prevent bruteforce attacks
+@application.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, error: RateLimitExceeded):
+    raise HTTPException(
+        status_code=429,
+        detail="Too many attemps, try later"
+    )
+
 
 # With OAuth it is MANDATORY to use HTTPS
 # To test locally it is possible to bypass this behavior through the use of the following command

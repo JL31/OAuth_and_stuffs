@@ -12,6 +12,8 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from redis import Redis
 from jwt import ExpiredSignatureError, PyJWTError
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 # Usecases
 from src.usecases.oauth_login.oauth_login_usecase import OAuthLoginUsecase
@@ -51,6 +53,7 @@ postgresql_connector = postgresql_connector(statement_timeout_value=30000)  # th
 # Global variables
 ENCODING: str = "utf-8"
 LOGGER: Logger = get_logger("REST_API_ENDPOINTS")
+BRUTEFORCE_LIMITATION: str = "3/minute"  # 3 calls per minute allowed
 
 # Registries implementations
 login_registry = LoginRegistryImplementation(redis_client=redis_connector, database_connector=postgresql_connector)
@@ -63,6 +66,14 @@ callback_login_usecase = CallbackLoginUsecase(login_registry)
 subscription_usecase = SubscriptionUsecase(login_registry)
 mfa_creation_usecase = MFACreationUsecase(login_registry, mfa_registry)
 mfa_check_usecase = MFACheckUsecase(login_registry)
+
+# Limiter configuration (to prevent bruteforce attacks)
+limiter = Limiter(key_func=get_remote_address)
+
+def get_limiter() -> Limiter:
+    """ Function to return API limiter to protect against bruteforce attacks """
+
+    return limiter
 
 
 def create_response_with_jwt(data: dict, redirection: bool = True) -> RedirectResponse | JSONResponse:
@@ -225,7 +236,8 @@ def subscription(form_data: OAuth2PasswordRequestForm = Depends()):
 
 
 @router.post(path="/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
+@get_limiter().limit(BRUTEFORCE_LIMITATION)
+def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):  # request is mandatory for bruteforce prevention
     """ Route to handle login with email (username) and password """
 
     try:
